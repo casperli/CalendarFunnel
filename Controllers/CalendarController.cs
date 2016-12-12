@@ -15,19 +15,21 @@ namespace CalendarFunnel.Controllers
     {
         private readonly GoogleCalendarSettings _settings;
 
+        private readonly CalendarService _service;
+
         public CalendarController()
         {
-            _settings = new GoogleCalendarSettings
+            _settings = new GoogleCalendarSettings(Environment.GetEnvironmentVariable("GoogleCalendarId"))
             {
                 ApplicationName = Environment.GetEnvironmentVariable("GoogleApplicationName"),
-                CalendarId = Environment.GetEnvironmentVariable("GoogleCalendarId"),
                 PrivateKey = Environment.GetEnvironmentVariable("GooglePrivateKey"),
                 ServiceAccountEmail = Environment.GetEnvironmentVariable("GoogleServiceAccountMail"),
             };
+
+            _service = CreateService();
         }
 
-        [HttpGet]
-        public JsonResult Get()
+        private CalendarService CreateService()
         {
             var credential = new ServiceAccountCredential(
                 new ServiceAccountCredential.Initializer(_settings.ServiceAccountEmail)
@@ -42,12 +44,33 @@ namespace CalendarFunnel.Controllers
                 ApplicationName = _settings.ApplicationName,
             });
 
+            return service;
+        }
+
+        [HttpGet]
+        public JsonResult Get()
+        {
+
+             var eventz =_settings.Calendars.SelectMany(GetCalendarEvents).Select(e=> new {
+                id = e.Id,
+                description = e.Description ?? string.Empty,
+                text = e.Summary,
+                start_date = ((DateTime) e.Start.DateTime).ToString("yyyy-MM-dd HH:mm"),
+                end_date = ((DateTime) e.End.DateTime).ToString("yyyy-MM-dd HH:mm"),
+                googleeventid = e.Id
+            });
+
+            return Json(eventz);
+        }
+
+
+        private IEnumerable<Event> GetCalendarEvents(string calendarId)
+        {
             // Calendar as array from environment; Parallelize query
-            var calendar = service.Calendars.Get(_settings.CalendarId).Execute();
-            var test = calendar.Description;
+            var calendar = _service.Calendars.Get(calendarId).Execute();
 
             EventsResource.ListRequest request =
-                service.Events.List(_settings.CalendarId);
+                _service.Events.List(calendarId);
             request.TimeMin = DateTime.Now.AddDays(-20);
 
             request.ShowDeleted = false;
@@ -58,17 +81,7 @@ namespace CalendarFunnel.Controllers
             // List events.
             Events events = request.Execute();
 
-            var list = events.Items.Select(e => new
-            {
-                id = e.Id,
-                description = e.Description ?? string.Empty,
-                text = e.Summary,
-                start_date = ((DateTime) e.Start.DateTime).ToString("yyyy-MM-dd HH:mm"),
-                end_date = ((DateTime) e.End.DateTime).ToString("yyyy-MM-dd HH:mm"),
-                googleeventid = e.Id
-            });
-
-            return Json(list);
+            return events.Items;
         }
     }
 }

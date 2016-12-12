@@ -1,8 +1,16 @@
-﻿namespace CalendarFunnel.Controllers
+﻿using System;
+using System.Collections.Generic;
+
+namespace CalendarFunnel.Controllers
 {
     public class GoogleCalendarSettings
     {
-        public string CalendarId { get; set; }
+        public GoogleCalendarSettings(string calendars)
+        {
+            Calendars = calendars.Split(new[] {";"}, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        public IEnumerable<string> Calendars { get; set; }
 
         public string ServiceAccountEmail { get; set; }
 
