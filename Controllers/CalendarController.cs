@@ -50,13 +50,14 @@ namespace CalendarFunnel.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-
-             var eventz =_settings.Calendars.SelectMany(GetCalendarEvents).Select(e=> new {
+            var eventz = _settings.Calendars.AsParallel().SelectMany(GetCalendarEvents).Select(e => new
+            {
                 id = e.Id,
                 description = e.Description ?? string.Empty,
                 text = e.Summary,
                 start_date = ((DateTime) e.Start.DateTime).ToString("yyyy-MM-dd HH:mm"),
                 end_date = ((DateTime) e.End.DateTime).ToString("yyyy-MM-dd HH:mm"),
+                location = e.Location,
                 googleeventid = e.Id
             });
 
