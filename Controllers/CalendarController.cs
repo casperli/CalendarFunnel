@@ -82,7 +82,11 @@ namespace CalendarFunnel.Controllers
             // List events.
             Events events = request.Execute();
 
-            return events.Items;
+            return events.Items.Select(e =>
+            {
+                e.Summary = calendar.Summary + "#*" + e.Summary;
+                return e;
+            });
         }
     }
 }

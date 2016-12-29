@@ -18,33 +18,95 @@
     a.cal_link {
         font-family: Arial
     }
+
+    div.event_gesamt {
+        background-color: red;
+        color: white;
+    }
+
+    div.event_bs {
+        background-color: orange;
+        color: white;
+    }
+
+    div.event_wallbach {
+        background-color: blue;
+        color: white;
+    }
+
+    div.event_rippolingen {
+        background-color: green;
+        color: white;
+    }
+
+    div.event_harpolingen {
+        background-color: grey;
+        color: white;
+    }
+
+
     </style>
 </head>
 <body>
 <!--<div>-->
-    <!--<ul>-->
-        <!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/4d4324uqu7l7cqar7egbm2767g%40group.calendar.google.com/public/basic.ics">Kalender Gesamtfeuerwehr Bad Säckingen</a></li>-->
-        <!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/dmc1fi7lf8labaqos50rvp6lpg%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Bad Säckingen</a></li>-->
-        <!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7d1nksapsi2mgnk7mldlgff4q0%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Harpolingen</a></li>-->
-        <!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/cae9hmopfnu0v0veku4g5tv9e4%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Rippolingen</a></li>-->
-        <!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7804m8olrkt4arcnd019i3dtqc%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Wallbach</a></li>-->
-    <!--</ul>-->
+<!--<ul>-->
+<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/4d4324uqu7l7cqar7egbm2767g%40group.calendar.google.com/public/basic.ics">Kalender Gesamtfeuerwehr Bad Säckingen</a></li>-->
+<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/dmc1fi7lf8labaqos50rvp6lpg%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Bad Säckingen</a></li>-->
+<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7d1nksapsi2mgnk7mldlgff4q0%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Harpolingen</a></li>-->
+<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/cae9hmopfnu0v0veku4g5tv9e4%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Rippolingen</a></li>-->
+<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7804m8olrkt4arcnd019i3dtqc%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Wallbach</a></li>-->
+<!--</ul>-->
 <!--</div>-->
 <div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
     <div class="dhx_cal_navline">
+    <div style="background:red">TODO: Legende für Farben</div>
         <div class="dhx_cal_prev_button">&nbsp;</div>
         <div class="dhx_cal_next_button">&nbsp;</div>
         <div class="dhx_cal_today_button"></div>
         <div class="dhx_cal_date"></div>
-        <div class="dhx_cal_tab" name="day_tab" style="right:204px;"></div>
-        <div class="dhx_cal_tab" name="week_tab" style="right:140px;"></div>
-        <div class="dhx_cal_tab" name="month_tab" style="right:76px;"></div>
+        <!--<div class="dhx_cal_tab" name="day_tab" style="right:204px;"></div>-->
+        <!--<div class="dhx_cal_tab" name="week_tab" style="right:140px;"></div>-->
+        <!--<div class="dhx_cal_tab" name="month_tab" style="right:76px;"></div>-->
     </div>
     <div class="dhx_cal_header"></div>
     <div class="dhx_cal_data"></div>
 </div>
 
 <script>
+function removeEventPrefix(start, end, ev){
+    if(ev.text.indexOf('#*') !== -1){
+        return ev.text.split('#*')[1];
+    }
+
+    return ev.text;
+}
+
+function getAbteilungNameByEventText(text){
+    if(text.indexOf('#*') !== -1){
+        for(var key in abteilungen){
+            if(abteilungen.hasOwnProperty(key) && text.startsWith(abteilungen[key])){
+                return abtText[key];
+            }
+        }
+    }
+
+    return '';
+}
+
+
+var abteilungen = {};
+abteilungen.gesamt = 'FWBS Gesamt';
+abteilungen.bs ='FWBS Abt BS';
+abteilungen.rippolingen = 'FWBS Abt Rippolingen';
+abteilungen.wallbach = 'FWBS Abt Wallbach';
+abteilungen.harpolingen = 'FWBS Abt. Harpolingen';
+
+var abtText = {}
+abtText.gesamt = 'Gesamtfeuerwehr';
+abtText.bs ='Abteilung Bad Säckingen';
+abtText.rippolingen = 'Abteilung Rippolingen';
+abtText.wallbach = 'Abteilung Wallbach';
+abtText.harpolingen = 'Abteilung Harpolingen';
 
 scheduler.config.xml_date = "%Y-%m-%d %H:%i";
 scheduler.config.prevent_cache = true;
@@ -54,6 +116,24 @@ scheduler.locale.labels.section_location = "Location";
 scheduler.config.details_on_create = true;
 scheduler.config.details_on_dblclick = true;
 scheduler.config.prevent_cache = true;
+
+scheduler.templates.event_class = function(start, end, ev){
+    for(var key in abteilungen){
+        if(abteilungen.hasOwnProperty(key) && ev.text.startsWith(abteilungen[key])){
+            return 'event_' + key;
+        }
+    }
+
+    return '';
+};
+
+scheduler.templates.event_bar_text = removeEventPrefix;
+scheduler.templates.event_text = removeEventPrefix;
+scheduler.templates.tooltip_text = function(start,end,ev){
+    return  "<b>" + getAbteilungNameByEventText(ev.text) + "</b><br/>" +  removeEventPrefix(start, end, ev) +"<br/><b>Beginn:</b> " +
+    start.getHours() + ':' + start.getMinutes() + ' Uhr' +
+    "<br/><b>Ende:</b> " + end.getHours() + ':' + end.getMinutes() + ' Uhr';
+};
 
 // Shows border of the calendar on the left side
 scheduler.config.left_border = true;
@@ -69,6 +149,7 @@ scheduler.load("api/calendar/", "json");
 
 var dp = new dataProcessor("api/calendar/");
 dp.init(scheduler);
+
 
 
 </script>
