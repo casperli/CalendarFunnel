@@ -48,12 +48,15 @@
 
 scheduler.config.xml_date = "%Y-%m-%d %H:%i";
 scheduler.config.prevent_cache = true;
-scheduler.config.first_hour = 4;
+scheduler.config.first_hour = 6;
 scheduler.config.limit_time_select = true;
 scheduler.locale.labels.section_location = "Location";
 scheduler.config.details_on_create = true;
 scheduler.config.details_on_dblclick = true;
 scheduler.config.prevent_cache = true;
+
+// Shows border of the calendar on the left side
+scheduler.config.left_border = true;
 
 scheduler.config.lightbox.sections = [
 {name:"description", height:130, map_to:"text", type:"textarea" , focus:true},
