@@ -43,7 +43,10 @@
         background-color: grey;
         color: white;
     }
-
+    div.event_jugend {
+        background-color: black;
+        color: white;
+    }
 
     </style>
 </head>
@@ -62,7 +65,7 @@
     <div style="background:red">TODO: Legende für Farben</div>
         <div class="dhx_cal_prev_button">&nbsp;</div>
         <div class="dhx_cal_next_button">&nbsp;</div>
-        <div class="dhx_cal_today_button"></div>
+        <!--<div class="dhx_cal_today_button"></div>-->
         <div class="dhx_cal_date"></div>
         <!--<div class="dhx_cal_tab" name="day_tab" style="right:204px;"></div>-->
         <!--<div class="dhx_cal_tab" name="week_tab" style="right:140px;"></div>-->
@@ -93,6 +96,17 @@ function getAbteilungNameByEventText(text){
     return '';
 }
 
+function getAbteilungBadgeByEventText(text){
+    if(text.indexOf('#*') !== -1){
+        for(var key in abteilungen){
+            if(abteilungen.hasOwnProperty(key) && text.startsWith(abteilungen[key])){
+                return abtBadge[key];
+            }
+        }
+    }
+
+    return '';
+}
 
 var abteilungen = {};
 abteilungen.gesamt = 'FWBS Gesamt';
@@ -100,6 +114,7 @@ abteilungen.bs ='FWBS Abt BS';
 abteilungen.rippolingen = 'FWBS Abt Rippolingen';
 abteilungen.wallbach = 'FWBS Abt Wallbach';
 abteilungen.harpolingen = 'FWBS Abt. Harpolingen';
+abteilungen.jugend = 'FWBS Jugend';
 
 var abtText = {}
 abtText.gesamt = 'Gesamtfeuerwehr';
@@ -107,6 +122,15 @@ abtText.bs ='Abteilung Bad Säckingen';
 abtText.rippolingen = 'Abteilung Rippolingen';
 abtText.wallbach = 'Abteilung Wallbach';
 abtText.harpolingen = 'Abteilung Harpolingen';
+abtText.jugend = 'Jugendfeuerwehr';
+
+var abtBadge = {}
+abtBadge.gesamt = 'http://helix3.fwbs.wb09.de/images/wappen_bs.png';
+abtBadge.bs ='http://helix3.fwbs.wb09.de/images/wappen_bs.png';
+abtBadge.rippolingen = 'http://helix3.fwbs.wb09.de/images/wappen_rippolingen.png';
+abtBadge.wallbach = 'http://helix3.fwbs.wb09.de/images/wappen_wallbach.png';
+abtBadge.harpolingen = 'http://helix3.fwbs.wb09.de/images/wappen_harpolingen.png';
+abtBadge.jugend = 'https://upload.wikimedia.org/wikipedia/de/thumb/a/a0/Deutsche_Jugendfeuerwehr.svg/140px-Deutsche_Jugendfeuerwehr.svg.png';
 
 scheduler.config.xml_date = "%Y-%m-%d %H:%i";
 scheduler.config.prevent_cache = true;
@@ -130,7 +154,7 @@ scheduler.templates.event_class = function(start, end, ev){
 scheduler.templates.event_bar_text = removeEventPrefix;
 scheduler.templates.event_text = removeEventPrefix;
 scheduler.templates.tooltip_text = function(start,end,ev){
-    return  "<b>" + getAbteilungNameByEventText(ev.text) + "</b><br/>" +  removeEventPrefix(start, end, ev) +"<br/><b>Beginn:</b> " +
+    return  '<img src="' + getAbteilungBadgeByEventText(ev.text) + '" width="20"/> <b>' + getAbteilungNameByEventText(ev.text) + "</b><br/>" +  removeEventPrefix(start, end, ev) +"<br/><b>Beginn:</b> " +
     start.getHours() + ':' + start.getMinutes() + ' Uhr' +
     "<br/><b>Ende:</b> " + end.getHours() + ':' + end.getMinutes() + ' Uhr';
 };
