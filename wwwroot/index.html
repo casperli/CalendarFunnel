@@ -51,25 +51,12 @@
     </style>
 </head>
 <body>
-<!--<div>-->
-<!--<ul>-->
-<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/4d4324uqu7l7cqar7egbm2767g%40group.calendar.google.com/public/basic.ics">Kalender Gesamtfeuerwehr Bad Säckingen</a></li>-->
-<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/dmc1fi7lf8labaqos50rvp6lpg%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Bad Säckingen</a></li>-->
-<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7d1nksapsi2mgnk7mldlgff4q0%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Harpolingen</a></li>-->
-<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/cae9hmopfnu0v0veku4g5tv9e4%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Rippolingen</a></li>-->
-<!--<li><a class="cal_link" href="https://calendar.google.com/calendar/ical/7804m8olrkt4arcnd019i3dtqc%40group.calendar.google.com/public/basic.ics">Kalender Abteilung Wallbach</a></li>-->
-<!--</ul>-->
-<!--</div>-->
-<div id="scheduler_here" class="dhx_cal_container" style='width:100%; height:100%;'>
+<div id="fwbs-scheduler" class="dhx_cal_container" style='width:100%; height:100%;'>
     <div class="dhx_cal_navline">
-    <div style="background:red">TODO: Legende für Farben</div>
+        <!--<div style="background:red">TODO: Legende für Farben</div>-->
         <div class="dhx_cal_prev_button">&nbsp;</div>
         <div class="dhx_cal_next_button">&nbsp;</div>
-        <!--<div class="dhx_cal_today_button"></div>-->
         <div class="dhx_cal_date"></div>
-        <!--<div class="dhx_cal_tab" name="day_tab" style="right:204px;"></div>-->
-        <!--<div class="dhx_cal_tab" name="week_tab" style="right:140px;"></div>-->
-        <!--<div class="dhx_cal_tab" name="month_tab" style="right:76px;"></div>-->
     </div>
     <div class="dhx_cal_header"></div>
     <div class="dhx_cal_data"></div>
@@ -145,16 +132,18 @@ abtBadge.harpolingen = 'http://helix3.fwbs.wb09.de/images/wappen_harpolingen.png
 abtBadge.jugend = 'https://upload.wikimedia.org/wikipedia/de/thumb/a/a0/Deutsche_Jugendfeuerwehr.svg/140px-Deutsche_Jugendfeuerwehr.svg.png';
 
 scheduler.config.xml_date = "%Y-%m-%d %H:%i";
-scheduler.config.prevent_cache = true;
-scheduler.config.first_hour = 6;
-scheduler.config.limit_time_select = true;
-scheduler.locale.labels.section_location = "Location";
+scheduler.config.dblclick_create = false;
+scheduler.config.show_quick_info = false;
 scheduler.config.details_on_create = false;
 scheduler.config.details_on_dblclick = false;
 scheduler.config.touch_tooltip = true;
 
-scheduler.attachEvent('onDblClick', function (id, e){
-    //Prevents showing details box
+// Shows border of the calendar on the left side
+scheduler.config.left_border = true;
+
+scheduler.attachEvent("onBeforeLightbox", function (id){
+    //Prevent showing the details pop-up (lightbox)
+    return false;
 });
 
 scheduler.templates.event_class = function(start, end, ev){
@@ -188,16 +177,7 @@ scheduler.templates.tooltip_text = function(start,end,ev){
     end.getMinutes());
 };
 
-// Shows border of the calendar on the left side
-scheduler.config.left_border = true;
-
-scheduler.config.lightbox.sections = [
-{name:"description", height:130, map_to:"text", type:"textarea" , focus:true},
-{name:"location", height:43, type:"textarea", map_to:"details" },
-{name:"time", height:72, type:"time", map_to:"auto"}
-];
-
-scheduler.init('scheduler_here', new Date(),"month");
+scheduler.init('fwbs-scheduler', new Date(),"month");
 scheduler.load("api/calendar/", "json");
 
 var dp = new dataProcessor("api/calendar/");
