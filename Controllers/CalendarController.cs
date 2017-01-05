@@ -33,7 +33,15 @@ namespace CalendarFunnel.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-            var tz = TimeZoneInfo.FindSystemTimeZoneById("CET");
+            TimeZoneInfo tz = TimeZoneInfo.Local;
+            try
+            {
+                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
+            }
+            catch (Exception ex)
+            {
+                // Do nothing
+            }
 
             var eventz = _settings.Calendars.AsParallel()
                 .SelectMany(GetCalendarEvents)
