@@ -76,6 +76,18 @@
 </div>
 
 <script>
+if (!String.format) {
+  String.format = function(format) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return format.replace(/{(\d+)}/g, function(match, number) {
+      return typeof args[number] != 'undefined'
+        ? args[number]
+        : match
+      ;
+    });
+  };
+}
+
 function removeEventPrefix(start, end, ev){
     if(ev.text.indexOf('#*') !== -1){
         return ev.text.split('#*')[1];
@@ -137,9 +149,14 @@ scheduler.config.prevent_cache = true;
 scheduler.config.first_hour = 6;
 scheduler.config.limit_time_select = true;
 scheduler.locale.labels.section_location = "Location";
-scheduler.config.details_on_create = true;
-scheduler.config.details_on_dblclick = true;
-scheduler.config.prevent_cache = true;
+scheduler.config.details_on_create = false;
+scheduler.config.details_on_dblclick = false;
+
+scheduler.config.touch_tooltip = true;
+
+scheduler.attachEvent('onDblClick', function (id, e){
+    //Prevents showing details box
+});
 
 scheduler.templates.event_class = function(start, end, ev){
     for(var key in abteilungen){
@@ -151,12 +168,25 @@ scheduler.templates.event_class = function(start, end, ev){
     return '';
 };
 
+var eventTemplate = '<img src="{0}" width="20"/> <b>{1}</b>'
+    + '<br/>{2}'
+    + '<br/><b>Ort:</b> {3}'
+    + '<br/><b>Beginn:</b> {4}:{5} Uhr'
+    + '<br/><b>Ende:</b> {6}:{7} Uhr';
+
 scheduler.templates.event_bar_text = removeEventPrefix;
 scheduler.templates.event_text = removeEventPrefix;
 scheduler.templates.tooltip_text = function(start,end,ev){
-    return  '<img src="' + getAbteilungBadgeByEventText(ev.text) + '" width="20"/> <b>' + getAbteilungNameByEventText(ev.text) + "</b><br/>" +  removeEventPrefix(start, end, ev) +"<br/><b>Beginn:</b> " +
-    start.getHours() + ':' + start.getMinutes() + ' Uhr' +
-    "<br/><b>Ende:</b> " + end.getHours() + ':' + end.getMinutes() + ' Uhr';
+    return String.format(
+    eventTemplate,
+    getAbteilungBadgeByEventText(ev.text),
+    getAbteilungNameByEventText(ev.text),
+    removeEventPrefix(start, end, ev),
+    ev.location,
+    start.getHours(),
+    start.getMinutes(),
+    end.getHours(),
+    end.getMinutes());
 };
 
 // Shows border of the calendar on the left side
@@ -173,8 +203,6 @@ scheduler.load("api/calendar/", "json");
 
 var dp = new dataProcessor("api/calendar/");
 dp.init(scheduler);
-
-
 
 </script>
 </body>
