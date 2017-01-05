@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
@@ -29,6 +30,29 @@ namespace CalendarFunnel.Controllers
             _service = CreateService();
         }
 
+        [HttpGet]
+        public JsonResult Get()
+        {
+            var tz = TimeZoneInfo.FindSystemTimeZoneById("CET");
+
+            var eventz = _settings.Calendars.AsParallel()
+                .SelectMany(GetCalendarEvents)
+                .Select(e => new
+                {
+                    id = e.Id,
+                    description = e.Description ?? string.Empty,
+                    text = e.Summary,
+                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
+                        .ToString("yyyy-MM-dd HH:mm"),
+                    end_date =
+                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
+                    location = e.Location,
+                    googleeventid = e.Id
+                });
+
+            return Json(eventz);
+        }
+
         private CalendarService CreateService()
         {
             var credential = new ServiceAccountCredential(
@@ -46,24 +70,6 @@ namespace CalendarFunnel.Controllers
 
             return service;
         }
-
-        [HttpGet]
-        public JsonResult Get()
-        {
-            var eventz = _settings.Calendars.AsParallel().SelectMany(GetCalendarEvents).Select(e => new
-            {
-                id = e.Id,
-                description = e.Description ?? string.Empty,
-                text = e.Summary,
-                start_date = ((DateTime) e.Start.DateTime).ToString("yyyy-MM-dd HH:mm"),
-                end_date = ((DateTime) e.End.DateTime).ToString("yyyy-MM-dd HH:mm"),
-                location = e.Location,
-                googleeventid = e.Id
-            });
-
-            return Json(eventz);
-        }
-
 
         private IEnumerable<Event> GetCalendarEvents(string calendarId)
         {
