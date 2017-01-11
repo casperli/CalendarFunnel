@@ -33,15 +33,15 @@ namespace CalendarFunnel.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-            TimeZoneInfo tz = TimeZoneInfo.Local;
-            try
-            {
-                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
-            }
-            catch (Exception ex)
-            {
-                // Do nothing
-            }
+//            TimeZoneInfo tz = TimeZoneInfo.Local;
+//            try
+//            {
+//                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
+//            }
+//            catch (Exception ex)
+//            {
+//                // Do nothing
+//            }
 
             var eventz = _settings.Calendars.AsParallel()
                 .SelectMany(GetCalendarEvents)
@@ -50,10 +50,13 @@ namespace CalendarFunnel.Controllers
                     id = e.Id,
                     description = e.Description ?? string.Empty,
                     text = e.Summary,
-                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
-                        .ToString("yyyy-MM-dd HH:mm"),
-                    end_date =
-                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
+//                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
+//                        .ToString("yyyy-MM-dd HH:mm"),
+//                    end_date =
+//                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
+                    start_date = e.Start.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
+                    end_date =e.End.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
+
                     location = e.Location,
                     googleeventid = e.Id
                 });
