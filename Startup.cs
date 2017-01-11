@@ -33,6 +33,8 @@ namespace CalendarFunnel
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
+            app.UseCors(builder => builder.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin());
+
             app.UseDefaultFiles();
             app.UseStaticFiles();
 
