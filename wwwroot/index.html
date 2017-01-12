@@ -104,9 +104,9 @@ scheduler.templates.tooltip_text = function(start, end, ev){
     removeEventPrefix(start, end, ev),
     ev.location,
     start.getHours(),
-    start.getMinutes(),
+    start.getMinutes() == '0' ? '00' : start.getMinutes(),
     end.getHours(),
-    end.getMinutes());
+    end.getMinutes()  == '0' ? '00' : start.getMinutes());
 };
 
 scheduler.init('fwbs-scheduler', new Date(),"month");
