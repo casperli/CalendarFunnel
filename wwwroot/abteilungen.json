@@ -3,7 +3,7 @@
         "id": "gesamt",
         "calendarId": "FWBS Gesamt",
         "caption": "Gesamtfeuerwehr",
-        "badge": "http://fwbs.de/images/wappen_bs.png"
+        "badge": "https://www.fwbs.de/images/wappen_bs.png"
     },
     {
         "id": "jugend",
@@ -15,24 +15,24 @@
         "id": "bs",
         "calendarId": "FWBS Abt BS",
         "caption": "Abteilung Bad Säckingen",
-        "badge": "http://fwbs.de/images/wappen_bs.png"
+        "badge": "https://www.fwbs.de/images/wappen_bs.png"
     },
     {
         "id": "rippolingen",
         "calendarId": "FWBS Abt Rippolingen",
         "caption": "Abteilung Rippolingen",
-        "badge": "http://fwbs.de/images/wappen_rippolingen.png"
+        "badge": "https://www.fwbs.de/images/wappen_rippolingen.png"
     },
     {
         "id": "wallbach",
         "calendarId": "FWBS Abt Wallbach",
         "caption": "Abteilung Wallbach",
-        "badge": "http://fwbs.de/images/wappen_wallbach.png"
+        "badge": "https://www.fwbs.de/images/wappen_wallbach.png"
     },
     {
         "id": "harpolingen",
         "calendarId": "FWBS Abt Harpolingen",
         "caption": "Abteilung Harpolingen",
-        "badge": "http://fwbs.de/images/wappen_harpolingen.png"
+        "badge": "https://www.fwbs.de/images/wappen_harpolingen.png"
     }
 ]

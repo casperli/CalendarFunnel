@@ -1,26 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
 using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace CalendarFunnel.Controllers
 {
     [Route("api/[controller]")]
     public class CalendarController : Controller
     {
+        private readonly ILogger<CalendarController> _logger;
+
         private readonly GoogleCalendarSettings _settings;
 
         private readonly CalendarService _service;
 
-        public CalendarController()
+        public CalendarController(ILogger<CalendarController> logger)
         {
+            _logger = logger;
             _settings = new GoogleCalendarSettings(Environment.GetEnvironmentVariable("GoogleCalendarId"))
             {
                 ApplicationName = Environment.GetEnvironmentVariable("GoogleApplicationName"),
@@ -44,6 +46,8 @@ namespace CalendarFunnel.Controllers
 //                // Do nothing
 //            }
 
+            _logger.LogInformation("Getting all events from calendars (in parallel).");
+
             var eventz = _settings.Calendars.AsParallel()
                 .SelectMany(GetCalendarEvents)
                 .Select(e => new
@@ -56,13 +60,57 @@ namespace CalendarFunnel.Controllers
 //                    end_date =
 //                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
                     start_date = e.Start.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
-                    end_date =e.End.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
+                    end_date = e.End.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
 
                     location = e.Location,
                     googleeventid = e.Id
                 });
 
             return Json(eventz);
+        }
+
+        [HttpPut]
+        [Route("events")]
+        public async Task<ActionResult> UpsertCalendarEvents([FromBody] IEnumerable<NewEvent> eventList)
+        {
+            var service = CreateService();
+            var newEvents = eventList.ToList();
+
+            var newCalendars = newEvents.Select(e => e.Calendar).Distinct().ToList();
+
+            var gcalendars = await service.CalendarList.List().ExecuteAsync();
+            var calendarsToUpdate = gcalendars.Items.Where(c => newCalendars.Contains(c.Summary)).ToList();
+
+            foreach (var calendar in calendarsToUpdate)
+            {
+                Console.WriteLine($"Upserting Calendar: {calendar.Summary} ID: {calendar.Id}");
+
+                var toDelete = await service.Events.List(calendar.Id).ExecuteAsync();
+
+                foreach (var deleteEvent in toDelete.Items)
+                {
+                    Console.WriteLine("Deleting event " + deleteEvent.Summary);
+                    await service.Events.Delete(calendar.Id, deleteEvent.Id).ExecuteAsync();
+                }
+
+                // await service.Calendars.Clear(calendar.Id).ExecuteAsync();
+                var events = newEvents.Where(e => e.Calendar == calendar.Summary);
+                foreach (var newEvent in events)
+                {
+                    Event gevent = new Event
+                    {
+                        Summary = newEvent.Title,
+                        Start = new EventDateTime {DateTime = newEvent.Start, TimeZone = "Europe/Zurich"},
+                        End = new EventDateTime {DateTime = newEvent.End, TimeZone = "Europe/Zurich"},
+                        Location = newEvent.Location,
+                    };
+
+                    Console.WriteLine($"Adding event {gevent.Summary} to calendar {calendar.Summary}");
+                    await service.Events.Insert(gevent, calendar.Id).ExecuteAsync();
+                }
+            }
+
+            return this.Ok(eventList);
         }
 
         private CalendarService CreateService()

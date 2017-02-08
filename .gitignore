@@ -235,7 +235,6 @@ _Pvt_Extensions
 
 # IntelliJ / Rider
 .idea/**
-/Probeplan 2017-RIP.xlsx
-/~$Probeplan 2017-RIP.xlsx
+.Data/**
 events.json
 events.txt

@@ -16,6 +16,7 @@ namespace CalendarFunnel
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
+                .UseAzureAppServices()
                 .Build();
 
             host.Run();
