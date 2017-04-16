@@ -160,7 +160,7 @@ namespace CalendarFunnel.Controllers
 
             EventsResource.ListRequest request =
                 _service.Events.List(calendarId);
-            request.TimeMin = DateTime.Now.AddDays(-20);
+            request.TimeMin = new DateTime(DateTime.Now.Year, 1, 1);
 
             request.ShowDeleted = false;
             request.SingleEvents = true;
