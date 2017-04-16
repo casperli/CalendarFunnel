@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using Google.Apis.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
+using NodaTime;
 
 namespace CalendarFunnel.Controllers
 {
@@ -38,16 +40,6 @@ namespace CalendarFunnel.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-            //            TimeZoneInfo tz = TimeZoneInfo.Local;
-            //            try
-            //            {
-            //                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
-            //            }
-            //            catch (Exception ex)
-            //            {
-            //                // Do nothing
-            //            }
-
             _logger.LogInformation("Getting all events from calendars (in parallel).");
 
             var eventz = _settings.Calendars.AsParallel()
@@ -57,18 +49,33 @@ namespace CalendarFunnel.Controllers
                     id = e.Id,
                     description = e.Description ?? string.Empty,
                     text = e.Summary,
-                    //                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
-                    //                        .ToString("yyyy-MM-dd HH:mm"),
-                    //                    end_date =
-                    //                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
-                    start_date = e.Start.DateTime.GetValueOrDefault().AddHours(0).ToString("yyyy-MM-dd HH:mm"),
-                    end_date = e.End.DateTime.GetValueOrDefault().AddHours(0).ToString("yyyy-MM-dd HH:mm"),
+                    start_date = GetZoneDateTime(e.Start).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+                    end_date = GetZoneDateTime(e.End).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
 
                     location = e.Location,
                     googleeventid = e.Id
                 });
 
             return Json(eventz);
+        }
+
+        public ZonedDateTime GetZoneDateTime(EventDateTime eventDate)
+        {
+            try
+            {
+                var dt = eventDate.DateTime.GetValueOrDefault();
+                var utc = new LocalDateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute);
+                var tz = DateTimeZoneProviders.Tzdb[eventDate.TimeZone ?? "Europe/Berlin"];
+
+                var result = tz.AtStrictly(utc);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(0, ex, $"Could not parse date to Noda Time: {eventDate.Date}. Exception: {ex.Message}");
+                return new ZonedDateTime();
+            }
         }
 
         [HttpPut]
