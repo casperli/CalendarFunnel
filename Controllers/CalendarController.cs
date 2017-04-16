@@ -18,6 +18,8 @@ namespace CalendarFunnel.Controllers
     [Route("api/[controller]")]
     public class CalendarController : Controller
     {
+        private const string DefaultIANATimeZone = "Europe/Berlin";
+        
         private readonly ILogger<CalendarController> _logger;
 
         private readonly GoogleCalendarSettings _settings;
@@ -49,8 +51,8 @@ namespace CalendarFunnel.Controllers
                     id = e.Id,
                     description = e.Description ?? string.Empty,
                     text = e.Summary,
-                    start_date = GetZoneDateTime(e.Start).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
-                    end_date = GetZoneDateTime(e.End).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+                    start_date = GetLocalDateTime(e.Start),
+                    end_date = GetLocalDateTime(e.End),
 
                     location = e.Location,
                     googleeventid = e.Id
@@ -59,21 +61,23 @@ namespace CalendarFunnel.Controllers
             return Json(eventz);
         }
 
-        public ZonedDateTime GetZoneDateTime(EventDateTime eventDate)
+        public string GetLocalDateTime(EventDateTime eventDate)
         {
+            const string dateFormat = "yyyy-MM-dd HH:mm";
+
             try
             {
-                var dt = eventDate.DateTime.GetValueOrDefault().ToUniversalTime();
-                var utc = Instant.FromUtc(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute);
-                var tz = DateTimeZoneProviders.Tzdb[eventDate.TimeZone ?? "Europe/Berlin"];
-                var result= utc.InZone(tz) ;
+                var eventUtcDate = eventDate.DateTime.GetValueOrDefault().ToUniversalTime();
+                var utcDate = Instant.FromUtc(eventUtcDate.Year, eventUtcDate.Month, eventUtcDate.Day, eventUtcDate.Hour, eventUtcDate.Minute);
+                var timeZone = DateTimeZoneProviders.Tzdb[eventDate.TimeZone ?? DefaultIANATimeZone];
+                var result = utcDate.InZone(timeZone);
 
-                return result;
+                return result.ToString(dateFormat, CultureInfo.InvariantCulture);
             }
             catch (Exception ex)
             {
                 _logger.LogError(0, ex, $"Could not parse date to Noda Time: {eventDate.Date}. Exception: {ex.Message}");
-                return new ZonedDateTime();
+                return string.Empty;
             }
         }
 
@@ -128,8 +132,8 @@ namespace CalendarFunnel.Controllers
                     Event gevent = new Event
                     {
                         Summary = newEvent.Title,
-                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = "Europe/Berlin" },
-                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = "Europe/Berlin" },
+                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = DefaultIANATimeZone },
+                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = DefaultIANATimeZone },
                         Location = newEvent.Location,
                     };
 
