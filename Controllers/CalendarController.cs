@@ -63,11 +63,10 @@ namespace CalendarFunnel.Controllers
         {
             try
             {
-                var dt = eventDate.DateTime.GetValueOrDefault();
-                var utc = new LocalDateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute);
+                var dt = eventDate.DateTime.GetValueOrDefault().ToUniversalTime();
+                var utc = Instant.FromUtc(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute);
                 var tz = DateTimeZoneProviders.Tzdb[eventDate.TimeZone ?? "Europe/Berlin"];
-
-                var result = tz.AtStrictly(utc);
+                var result= utc.InZone(tz) ;
 
                 return result;
             }
@@ -129,8 +128,8 @@ namespace CalendarFunnel.Controllers
                     Event gevent = new Event
                     {
                         Summary = newEvent.Title,
-                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = "Europe/Zurich" },
-                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = "Europe/Zurich" },
+                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = "Europe/Berlin" },
+                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = "Europe/Berlin" },
                         Location = newEvent.Location,
                     };
 
@@ -168,7 +167,6 @@ namespace CalendarFunnel.Controllers
             EventsResource.ListRequest request =
                 _service.Events.List(calendarId);
             request.TimeMin = new DateTime(DateTime.Now.Year, 1, 1);
-
             request.ShowDeleted = false;
             request.SingleEvents = true;
             request.MaxResults = 100;
