@@ -1,4 +1,5 @@
-﻿// {
+﻿// Needed to get it running on Azure pre 1.1
+// {
 //     "sdk": {
 //         "version": "1.0.0-preview2-1-003177"
 //     }
