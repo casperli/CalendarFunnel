@@ -238,3 +238,4 @@ _Pvt_Extensions
 .Data/**
 events.json
 events.txt
+.vscode/launch.json

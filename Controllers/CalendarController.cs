@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Calendar.v3;
@@ -8,6 +9,7 @@ using Google.Apis.Calendar.v3.Data;
 using Google.Apis.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace CalendarFunnel.Controllers
 {
@@ -36,15 +38,15 @@ namespace CalendarFunnel.Controllers
         [HttpGet]
         public JsonResult Get()
         {
-//            TimeZoneInfo tz = TimeZoneInfo.Local;
-//            try
-//            {
-//                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
-//            }
-//            catch (Exception ex)
-//            {
-//                // Do nothing
-//            }
+            //            TimeZoneInfo tz = TimeZoneInfo.Local;
+            //            try
+            //            {
+            //                tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Zurich") ?? TimeZoneInfo.Local;
+            //            }
+            //            catch (Exception ex)
+            //            {
+            //                // Do nothing
+            //            }
 
             _logger.LogInformation("Getting all events from calendars (in parallel).");
 
@@ -55,12 +57,12 @@ namespace CalendarFunnel.Controllers
                     id = e.Id,
                     description = e.Description ?? string.Empty,
                     text = e.Summary,
-//                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
-//                        .ToString("yyyy-MM-dd HH:mm"),
-//                    end_date =
-//                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
-                    start_date = e.Start.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
-                    end_date = e.End.DateTime.GetValueOrDefault().AddHours(1).ToString("yyyy-MM-dd HH:mm"),
+                    //                    start_date = TimeZoneInfo.ConvertTime(e.Start.DateTime.GetValueOrDefault(), tz)
+                    //                        .ToString("yyyy-MM-dd HH:mm"),
+                    //                    end_date =
+                    //                    TimeZoneInfo.ConvertTime(e.End.DateTime.GetValueOrDefault(), tz).ToString("yyyy-MM-dd HH:mm"),
+                    start_date = e.Start.DateTime.GetValueOrDefault().AddHours(0).ToString("yyyy-MM-dd HH:mm"),
+                    end_date = e.End.DateTime.GetValueOrDefault().AddHours(0).ToString("yyyy-MM-dd HH:mm"),
 
                     location = e.Location,
                     googleeventid = e.Id
@@ -71,7 +73,28 @@ namespace CalendarFunnel.Controllers
 
         [HttpPut]
         [Route("events")]
-        public async Task<ActionResult> UpsertCalendarEvents([FromBody] IEnumerable<NewEvent> eventList)
+        public ActionResult UpsertCalendarEvents([FromBody] IEnumerable<NewEvent> eventList)
+        {
+            // Very primitive permission check
+            var validKey = Environment.GetEnvironmentVariable("UpsertKey");
+
+            if (string.IsNullOrEmpty(validKey))
+            {
+                _logger.LogWarning($"Upsert key received from environment");
+                return this.StatusCode((int)HttpStatusCode.ServiceUnavailable);
+            }
+
+            var keyHeader = this.Request.Headers["UpsertKey"];
+
+            if (keyHeader == StringValues.Empty || keyHeader.Contains(validKey))
+            {
+                return this.Unauthorized();
+            }
+
+            return this.Ok(Upsert(eventList));
+        }
+
+        private async Task<IEnumerable<NewEvent>> Upsert(IEnumerable<NewEvent> eventList)
         {
             var service = CreateService();
             var newEvents = eventList.ToList();
@@ -93,15 +116,14 @@ namespace CalendarFunnel.Controllers
                     await service.Events.Delete(calendar.Id, deleteEvent.Id).ExecuteAsync();
                 }
 
-                // await service.Calendars.Clear(calendar.Id).ExecuteAsync();
                 var events = newEvents.Where(e => e.Calendar == calendar.Summary);
                 foreach (var newEvent in events)
                 {
                     Event gevent = new Event
                     {
                         Summary = newEvent.Title,
-                        Start = new EventDateTime {DateTime = newEvent.Start, TimeZone = "Europe/Zurich"},
-                        End = new EventDateTime {DateTime = newEvent.End, TimeZone = "Europe/Zurich"},
+                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = "Europe/Zurich" },
+                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = "Europe/Zurich" },
                         Location = newEvent.Location,
                     };
 
@@ -110,7 +132,7 @@ namespace CalendarFunnel.Controllers
                 }
             }
 
-            return this.Ok(eventList);
+            return eventList;
         }
 
         private CalendarService CreateService()
@@ -118,7 +140,7 @@ namespace CalendarFunnel.Controllers
             var credential = new ServiceAccountCredential(
                 new ServiceAccountCredential.Initializer(_settings.ServiceAccountEmail)
                 {
-                    Scopes = new[] {CalendarService.Scope.Calendar}
+                    Scopes = new[] { CalendarService.Scope.Calendar }
                 }.FromPrivateKey(_settings.PrivateKey));
 
             // Create the service.

@@ -131,9 +131,12 @@ scheduler.templates.tooltip_text = function(start, end, ev){
 };
 
 scheduler.init('fwbs-scheduler', new Date(),"month");
-scheduler.load("https://fwbs-test.azurewebsites.net/api/calendar/", "json");
+// scheduler.load("https://fwbs-test.azurewebsites.net/api/calendar/", "json");
+scheduler.load("http://localhost:5000/api/calendar/", "json");
 
-var dp = new dataProcessor("https://fwbs-test.azurewebsites.net/api/calendar/");
+// var dp = new dataProcessor("https://fwbs-test.azurewebsites.net/api/calendar/");
+var dp = new dataProcessor("http://localhost:5000/api/calendar/");
+
 dp.init(scheduler);
 
 
