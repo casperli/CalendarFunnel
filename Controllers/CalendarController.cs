@@ -19,7 +19,7 @@ namespace CalendarFunnel.Controllers
     public class CalendarController : Controller
     {
         private const string DefaultIANATimeZone = "Europe/Berlin";
-        
+
         private readonly ILogger<CalendarController> _logger;
 
         private readonly GoogleCalendarSettings _settings;
@@ -68,7 +68,8 @@ namespace CalendarFunnel.Controllers
             try
             {
                 var eventUtcDate = eventDate.DateTime.GetValueOrDefault().ToUniversalTime();
-                var utcDate = Instant.FromUtc(eventUtcDate.Year, eventUtcDate.Month, eventUtcDate.Day, eventUtcDate.Hour, eventUtcDate.Minute);
+                var utcDate = Instant.FromUtc(eventUtcDate.Year, eventUtcDate.Month, eventUtcDate.Day,
+                    eventUtcDate.Hour, eventUtcDate.Minute);
                 var timeZone = DateTimeZoneProviders.Tzdb[eventDate.TimeZone ?? DefaultIANATimeZone];
                 var result = utcDate.InZone(timeZone);
 
@@ -76,7 +77,8 @@ namespace CalendarFunnel.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(0, ex, $"Could not parse date to Noda Time: {eventDate.Date}. Exception: {ex.Message}");
+                _logger.LogError(0, ex,
+                    $"Could not parse date to Noda Time: {eventDate.Date}. Exception: {ex.Message}");
                 return string.Empty;
             }
         }
@@ -91,7 +93,7 @@ namespace CalendarFunnel.Controllers
             if (string.IsNullOrEmpty(validKey))
             {
                 _logger.LogWarning($"Upsert key received from environment");
-                return this.StatusCode((int)HttpStatusCode.ServiceUnavailable);
+                return this.StatusCode((int) HttpStatusCode.ServiceUnavailable);
             }
 
             var keyHeader = this.Request.Headers["UpsertKey"];
@@ -120,7 +122,7 @@ namespace CalendarFunnel.Controllers
 
                 var toDelete = await service.Events.List(calendar.Id).ExecuteAsync();
 
-                foreach (var deleteEvent in toDelete.Items)
+                foreach (var deleteEvent in toDelete.Items.Where(i => i.Start.DateTime?.Year == DateTime.Now.Year))
                 {
                     Console.WriteLine("Deleting event " + deleteEvent.Summary);
                     await service.Events.Delete(calendar.Id, deleteEvent.Id).ExecuteAsync();
@@ -129,13 +131,7 @@ namespace CalendarFunnel.Controllers
                 var events = newEvents.Where(e => e.Calendar == calendar.Summary);
                 foreach (var newEvent in events)
                 {
-                    Event gevent = new Event
-                    {
-                        Summary = newEvent.Title,
-                        Start = new EventDateTime { DateTime = newEvent.Start, TimeZone = DefaultIANATimeZone },
-                        End = new EventDateTime { DateTime = newEvent.End, TimeZone = DefaultIANATimeZone },
-                        Location = newEvent.Location,
-                    };
+                    var gevent = CreateGoogleEvent(newEvent);
 
                     Console.WriteLine($"Adding event {gevent.Summary} to calendar {calendar.Summary}");
                     await service.Events.Insert(gevent, calendar.Id).ExecuteAsync();
@@ -145,12 +141,36 @@ namespace CalendarFunnel.Controllers
             return eventList;
         }
 
+        private static Event CreateGoogleEvent(NewEvent newEvent)
+        {
+            Event gevent = new Event
+            {
+                Summary = newEvent.Title,
+                Description = newEvent.Description,
+                Location = newEvent.Location,
+            };
+
+            if (newEvent.Start.Hour == 0 && newEvent.End.Hour == 0)
+            {
+                gevent.End = gevent.Start = new EventDateTime
+                    {TimeZone = DefaultIANATimeZone, Date = newEvent.Start.ToString("yyyy-MM-dd")};
+            }
+            else
+            {
+                gevent.Start = new EventDateTime {DateTime = newEvent.Start, TimeZone = DefaultIANATimeZone};
+                gevent.End = new EventDateTime {DateTime = newEvent.End, TimeZone = DefaultIANATimeZone};
+            }
+
+
+            return gevent;
+        }
+
         private CalendarService CreateService()
         {
             var credential = new ServiceAccountCredential(
                 new ServiceAccountCredential.Initializer(_settings.ServiceAccountEmail)
                 {
-                    Scopes = new[] { CalendarService.Scope.Calendar }
+                    Scopes = new[] {CalendarService.Scope.Calendar}
                 }.FromPrivateKey(_settings.PrivateKey));
 
             // Create the service.
@@ -165,12 +185,11 @@ namespace CalendarFunnel.Controllers
 
         private IEnumerable<Event> GetCalendarEvents(string calendarId)
         {
-            // Calendar as array from environment; Parallelize query
             var calendar = _service.Calendars.Get(calendarId).Execute();
 
             EventsResource.ListRequest request =
                 _service.Events.List(calendarId);
-            request.TimeMin = new DateTime(DateTime.Now.Year, 1, 1);
+            request.TimeMin = new DateTime(DateTime.Now.Year - 1, 1, 1);
             request.ShowDeleted = false;
             request.SingleEvents = true;
             request.MaxResults = 100;
